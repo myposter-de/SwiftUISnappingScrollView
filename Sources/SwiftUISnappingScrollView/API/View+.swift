@@ -69,3 +69,9 @@ public extension View {
         modifier(OnVisibleModifier(action: action, insets: insets))
     }
 }
+
+public extension View {
+    func onSelected(action: @escaping (_ isSelected: Bool) -> Void) -> some View {
+        modifier(OnSelectedModifier(action: action))
+    }
+}

@@ -8,10 +8,6 @@ import SwiftUI
 
 internal extension View {
     @ViewBuilder @inlinable func ignoresSafeArea() -> some View {
-        if #available(iOS 14.0, *) {
-            ignoresSafeArea(.all, edges: .all)
-        } else {
-            edgesIgnoringSafeArea(.all)
-        }
+        ignoresSafeArea(.all, edges: .all)
     }
 }
