@@ -33,55 +33,68 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
         if (targetContentOffset.pointee.y <= -naturalInset!.top && scrollView.alwaysBounceVertical) {
             return
         }
+//        
+//        var targetOffset = targetContentOffset.pointee
+//        
+//        let minX = -scrollView.contentInset.left
+//        let maxX = scrollView.contentSize.width + scrollView.contentInset.right - scrollView.frame.width
+//        let minY = -scrollView.contentInset.top
+////        let midY = (scrollView.contentSize.height + scrollView.contentInset.top - scrollView.contentInset.bottom) / 2
+//        let maxY = scrollView.contentSize.height + scrollView.contentInset.bottom - scrollView.frame.height
+//        
+//        let localFrames = frames.map { $0.offsetBy(dx: minX, dy: minY) }
+//        
+//        targetOffset.x = localFrames
+//            .reduce([PointRange(start: minX, end: maxX)]) { values, frame in
+//                values
+//                    .flatMap {
+//                        $0.excluding(PointRange(start: max(frame.minX, minX), end: min(frame.maxX, maxX)))
+//                    }
+//                    .reduce([]) {
+//                        $0.contains($1) ? $0 : $0 + [$1]
+//                    }
+//            }
+//            .sorted { $0.distance(to: targetOffset.x) < $1.distance(to: targetOffset.x) }
+//            .first?
+//            .resolving(targetOffset.y) ?? minX
+//        
+//        targetOffset.y = localFrames
+//            .reduce([PointRange(start: minY, end: maxY)]) { values, frame in
+//                values
+//                    .flatMap {
+//                        $0.excluding(PointRange(start: max(frame.minY, minY), end: min(frame.maxY, maxY)))
+//                    }
+//                    .reduce([]) {
+//                        $0.contains($1) ? $0 : $0 + [$1]
+//                    }
+//            }
+//            .sorted { $0.distance(to: targetOffset.y) < $1.distance(to: targetOffset.y) }
+//            .first?
+//            .resolving(targetOffset.y) ?? minY
+//        
+//        if (scrollView.contentOffset.x > targetOffset.x && velocity.x > 0)
+//            || (scrollView.contentOffset.x < targetOffset.x && velocity.x < 0)
+//            || (scrollView.contentOffset.y > targetOffset.y && velocity.y > 0)
+//            || (scrollView.contentOffset.y < targetOffset.y && velocity.y < 0)
+//        {
+//            //Fixes immediate jump to target offset
+//            targetContentOffset.pointee = scrollView.contentOffset
+//            scrollView.setContentOffset(targetOffset, animated: true)
+//        } else {
+//            targetContentOffset.pointee = targetOffset
+//        }
+
+        // Calculate the height of each page based on the scroll view's frame height
+        let pageHeight = scrollView.frame.size.height
         
-        var targetOffset = targetContentOffset.pointee
+        // Calculate the target page based on the current content offset and page height
+        var targetPage = Int((targetContentOffset.pointee.y + scrollView.contentInset.top + pageHeight / 2) / pageHeight)
         
-        let minX = -scrollView.contentInset.left
-        let maxX = scrollView.contentSize.width + scrollView.contentInset.right - scrollView.frame.width
-        let minY = -scrollView.contentInset.top
-        let maxY = scrollView.contentSize.height + scrollView.contentInset.bottom - scrollView.frame.height
+        // Calculate the target content offset based on the target page
+        let targetY = CGFloat(targetPage) * pageHeight - scrollView.contentInset.top
         
-        let localFrames = frames.map { $0.offsetBy(dx: minX, dy: minY) }
-        
-        targetOffset.x = localFrames
-            .reduce([PointRange(start: minX, end: maxX)]) { values, frame in
-                values
-                    .flatMap {
-                        $0.excluding(PointRange(start: max(frame.minX, minX), end: min(frame.maxX, maxX)))
-                    }
-                    .reduce([]) {
-                        $0.contains($1) ? $0 : $0 + [$1]
-                    }
-            }
-            .sorted { $0.distance(to: targetOffset.x) < $1.distance(to: targetOffset.x) }
-            .first?
-            .resolving(targetOffset.y) ?? minX
-        
-        targetOffset.y = localFrames
-            .reduce([PointRange(start: minY, end: maxY)]) { values, frame in
-                values
-                    .flatMap {
-                        $0.excluding(PointRange(start: max(frame.minY, minY), end: min(frame.maxY, maxY)))
-                    }
-                    .reduce([]) {
-                        $0.contains($1) ? $0 : $0 + [$1]
-                    }
-            }
-            .sorted { $0.distance(to: targetOffset.y) < $1.distance(to: targetOffset.y) }
-            .first?
-            .resolving(targetOffset.y) ?? minY
-        
-        if (scrollView.contentOffset.x > targetOffset.x && velocity.x > 0)
-            || (scrollView.contentOffset.x < targetOffset.x && velocity.x < 0)
-            || (scrollView.contentOffset.y > targetOffset.y && velocity.y > 0)
-            || (scrollView.contentOffset.y < targetOffset.y && velocity.y < 0)
-        {
-            //Fixes immediate jump to target offset
-            targetContentOffset.pointee = scrollView.contentOffset
-            scrollView.setContentOffset(targetOffset, animated: true)
-        } else {
-            targetContentOffset.pointee = targetOffset
-        }
+        // Ensure that the target content offset is within the bounds of the content
+        targetContentOffset.pointee.y = max(-scrollView.contentInset.top, min(targetY, scrollView.contentSize.height - scrollView.frame.size.height + scrollView.contentInset.bottom))
     }
 }
 
