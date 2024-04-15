@@ -29,6 +29,12 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
                                    withVelocity velocity: CGPoint,
                                    targetContentOffset: UnsafeMutablePointer<CGPoint>)
     {
+        let flickThreshold: CGFloat = 2.0
+        let velocityMagnitude = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+
+        // Check on the scrollSpeed and skip the snapping when its too high
+        guard velocityMagnitude <= flickThreshold else { return }
+
         // Prevent large navigation title from interfering with target offset
         if (targetContentOffset.pointee.y <= -naturalInset!.top && scrollView.alwaysBounceVertical) {
             return
