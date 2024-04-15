@@ -5,6 +5,7 @@
 */
 
 import SwiftUI
+import SwiftUIIntrospect
 
 public struct SnappingScrollView<Content>: View
 where Content : View
@@ -31,7 +32,16 @@ where Content : View
                 .hidden()
             }
             .transformPreference(AnchorsKey.self) { $0 = AnchorsKey.defaultValue }
-            .background(UIScrollViewBridge(decelerationRate: decelerationRate.rate, delegate: delegate))
+//            .background(UIScrollViewBridge(decelerationRate: decelerationRate.rate, delegate: delegate))
+        }
+        .introspect(.scrollView, on: .iOS(.v13, .v14, .v15, .v16, .v17)) { scrollView in
+            scrollView.decelerationRate = decelerationRate.rate
+            scrollView.delegate = delegate
+            
+            //Prevent SwiftUI from reverting deceleration rate
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                scrollView.decelerationRate = decelerationRate.rate
+            }
         }
         .background(
             GeometryReader { geometry in
