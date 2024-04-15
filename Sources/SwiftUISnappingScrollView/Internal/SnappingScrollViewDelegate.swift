@@ -27,119 +27,23 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
     
     func scrollViewWillEndDragging(_ scrollView: UIScrollView,
                                    withVelocity velocity: CGPoint,
-                                   targetContentOffset: UnsafeMutablePointer<CGPoint>)
-    {
-        let flickThreshold: CGFloat = 2.0
-        let velocityMagnitude = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+                                   targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        guard targetContentOffset.pointee.y > 0 else { return }
 
-        // Check on the scrollSpeed and skip the snapping when its too high
-        print("velocityMagnitude: \(velocityMagnitude)")
-        print("flickThreshold: \(flickThreshold)")
-        guard velocityMagnitude <= flickThreshold else { return }
+        let visibleHeight = scrollView.bounds.height
 
-        // Prevent large navigation title from interfering with target offset
-        if (targetContentOffset.pointee.y <= -naturalInset!.top && scrollView.alwaysBounceVertical) {
+        let targetOffsetY = targetContentOffset.pointee.y + (visibleHeight / 2.0)
+
+        guard let closestView = frames.min(by: { abs($0.midY - targetOffsetY) < abs($1.midY - targetOffsetY) }) else {
             return
         }
-        
-        var targetOffset = targetContentOffset.pointee
-        
-        let minX = -scrollView.contentInset.left
-        let maxX = scrollView.contentSize.width + scrollView.contentInset.right - scrollView.frame.width
-        let minY = -scrollView.contentInset.top
-        let maxY = scrollView.contentSize.height + scrollView.contentInset.bottom - scrollView.frame.height
-        
-        let localFrames = frames.map { $0.offsetBy(dx: minX, dy: minY) }
-        
-        targetOffset.x = localFrames
-            .reduce([PointRange(start: minX, end: maxX)]) { values, frame in
-                values
-                    .flatMap {
-                        $0.excluding(PointRange(start: max(frame.minX, minX), end: min(frame.maxX, maxX)))
-                    }
-                    .reduce([]) {
-                        $0.contains($1) ? $0 : $0 + [$1]
-                    }
-            }
-            .sorted { $0.distance(to: targetOffset.x) < $1.distance(to: targetOffset.x) }
-            .first?
-            .resolving(targetOffset.y) ?? minX
-        
-        targetOffset.y = localFrames
-            .reduce([PointRange(start: minY, end: maxY)]) { values, frame in
-                values
-                    .flatMap {
-                        $0.excluding(PointRange(start: max(frame.minY, minY), end: min(frame.maxY, maxY)))
-                    }
-                    .reduce([]) {
-                        $0.contains($1) ? $0 : $0 + [$1]
-                    }
-            }
-            .sorted { $0.distance(to: targetOffset.y) < $1.distance(to: targetOffset.y) }
-            .first?
-            .resolving(targetOffset.y) ?? minY
-        
-        if (scrollView.contentOffset.x > targetOffset.x && velocity.x > 0)
-            || (scrollView.contentOffset.x < targetOffset.x && velocity.x < 0)
-            || (scrollView.contentOffset.y > targetOffset.y && velocity.y > 0)
-            || (scrollView.contentOffset.y < targetOffset.y && velocity.y < 0)
-        {
-            //Fixes immediate jump to target offset
-            targetContentOffset.pointee = scrollView.contentOffset
-            scrollView.setContentOffset(targetOffset, animated: true)
-        } else {
-            targetContentOffset.pointee = targetOffset
-        }
-    }
-}
 
+        let newTargetOffsetY = closestView.midY - (visibleHeight / 2.0)
 
-private struct PointRange: Hashable {
-    let start: CGFloat
-    let end: CGFloat
-    
-    private func contains(_ point: CGFloat) -> Bool {
-        (start...end).contains(point)
-    }
-    
-    func distance(to point: CGFloat) -> CGFloat {
-        if contains(point) {
-            return 0
-        } else {
-            return min(abs(start - point), abs(end - point))
+        guard targetContentOffset.pointee.y + visibleHeight < scrollView.contentSize.height else {
+            return
         }
-    }
-    
-    func excluding(_ other: PointRange) -> [PointRange] {
-        if other.start < start {
-            if other.end <= end {
-                if other.end <= start {
-                    return [self]
-                } else {
-                    return [PointRange(start: other.end, end: end)]
-                }
-            } else {
-                return []
-            }
-        } else {
-            if other.end <= end {
-                return [PointRange(start: start, end: other.start),
-                        PointRange(start: other.end, end: end)]
-            } else {
-                if other.start > end {
-                    return [self]
-                } else {
-                    return [PointRange(start: start, end: other.start)]
-                }
-            }
-        }
-    }
-    
-    func resolving(_ point: CGFloat) -> CGFloat {
-        if contains(point) {
-            return point
-        } else {
-            return abs(start - point) < abs(end - point) ? start : end
-        }
+
+        targetContentOffset.pointee.y = newTargetOffsetY
     }
 }

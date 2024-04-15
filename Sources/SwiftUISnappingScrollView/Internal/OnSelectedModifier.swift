@@ -17,7 +17,7 @@ internal struct OnSelectedModifier: ViewModifier {
         content
             .background(
                 GeometryReader { geometry in
-                    let isSelected = abs((scrollViewFrame?.minY ?? 0) - geometry.frame(in: .global).minY) < 120
+                    let isSelected = abs((scrollViewFrame?.midY ?? 0) - geometry.frame(in: .global).midY) < 240
                     
                     Color.clear
                         .onAppear { onSelected(isSelected) }
