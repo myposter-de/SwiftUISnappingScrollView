@@ -33,6 +33,8 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
         let velocityMagnitude = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
 
         // Check on the scrollSpeed and skip the snapping when its too high
+        print("velocityMagnitude: \(velocityMagnitude)")
+        print("flickThreshold: \(flickThreshold)")
         guard velocityMagnitude <= flickThreshold else { return }
 
         // Prevent large navigation title from interfering with target offset
