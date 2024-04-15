@@ -36,31 +36,32 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
         
         var targetOffset = targetContentOffset.pointee
         
-        // Define the horizontal and vertical insets of the scrollView
         let minX = -scrollView.contentInset.left
         let maxX = scrollView.contentSize.width + scrollView.contentInset.right - scrollView.frame.width
         let minY = -scrollView.contentInset.top
         let maxY = scrollView.contentSize.height + scrollView.contentInset.bottom - scrollView.frame.height
         
-        // Calculate the centerY within the scrollView's visible frame
-        let centerY = scrollView.bounds.midY
+        let localFrames = frames.map { $0.offsetBy(dx: minX, dy: minY) }
         
-        // Calculate the height of each page
-        let pageHeight = scrollView.frame.size.height
-        
-        // Calculate the minY and maxY based on the centerY
-        let minPageY = centerY - pageHeight / 2 - scrollView.contentInset.top
-        let maxPageY = centerY + pageHeight / 2 - scrollView.contentInset.top
-        
-        // Update the localFrames to take into account centerY alignment
-        let localFrames = frames.map { $0.offsetBy(dx: minX, dy: minPageY) }
-        
-        // Calculate the targetOffset.y based on the centerY alignment
-        targetOffset.y = localFrames
-            .reduce([PointRange(start: minPageY, end: maxPageY)]) { values, frame in
+        targetOffset.x = localFrames
+            .reduce([PointRange(start: minX, end: maxX)]) { values, frame in
                 values
                     .flatMap {
-                        $0.excluding(PointRange(start: max(frame.minY, minPageY), end: min(frame.maxY, maxPageY)))
+                        $0.excluding(PointRange(start: max(frame.minX, minX), end: min(frame.maxX, maxX)))
+                    }
+                    .reduce([]) {
+                        $0.contains($1) ? $0 : $0 + [$1]
+                    }
+            }
+            .sorted { $0.distance(to: targetOffset.x) < $1.distance(to: targetOffset.x) }
+            .first?
+            .resolving(targetOffset.y) ?? minX
+        
+        targetOffset.y = localFrames
+            .reduce([PointRange(start: minY, end: maxY)]) { values, frame in
+                values
+                    .flatMap {
+                        $0.excluding(PointRange(start: max(frame.minY, minY), end: min(frame.maxY, maxY)))
                     }
                     .reduce([]) {
                         $0.contains($1) ? $0 : $0 + [$1]
@@ -68,19 +69,18 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
             }
             .sorted { $0.distance(to: targetOffset.y) < $1.distance(to: targetOffset.y) }
             .first?
-            .resolving(targetOffset.y) ?? minPageY
+            .resolving(targetOffset.y) ?? minY
         
-        // Check if there is a change in the vertical direction and if the target offset is within bounds
-        let shouldSnap = (scrollView.contentOffset.y > targetOffset.y && velocity.y > 0)
+        if (scrollView.contentOffset.x > targetOffset.x && velocity.x > 0)
+            || (scrollView.contentOffset.x < targetOffset.x && velocity.x < 0)
+            || (scrollView.contentOffset.y > targetOffset.y && velocity.y > 0)
             || (scrollView.contentOffset.y < targetOffset.y && velocity.y < 0)
-        
-        // Snap to targetOffset if necessary
-        if shouldSnap {
-            targetContentOffset.pointee = targetOffset
-        } else {
-            // Fixes immediate jump to target offset
+        {
+            //Fixes immediate jump to target offset
             targetContentOffset.pointee = scrollView.contentOffset
             scrollView.setContentOffset(targetOffset, animated: true)
+        } else {
+            targetContentOffset.pointee = targetOffset
         }
     }
 }
