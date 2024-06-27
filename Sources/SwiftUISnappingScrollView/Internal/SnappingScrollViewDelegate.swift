@@ -28,22 +28,38 @@ internal class SnappingScrollViewDelegate: NSObject, ObservableObject, UIScrollV
     func scrollViewWillEndDragging(_ scrollView: UIScrollView,
                                    withVelocity velocity: CGPoint,
                                    targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        guard targetContentOffset.pointee.y > 0 else { return }
+        if targetContentOffset.pointee.y > 0 {
+            let visibleHeight = scrollView.bounds.height
+            
+            let targetOffsetY = targetContentOffset.pointee.y + (visibleHeight / 2.0)
+            
+            guard let closestView = frames.min(by: { abs($0.midY - targetOffsetY) < abs($1.midY - targetOffsetY) }) else {
+                return
+            }
+            
+            let newTargetOffsetY = closestView.midY - (visibleHeight / 2.0)
+            
+            guard targetContentOffset.pointee.y + visibleHeight < scrollView.contentSize.height else {
+                return
+            }
+            
+            targetContentOffset.pointee.y = newTargetOffsetY
+        } else {
+            let visibleWidth = scrollView.bounds.width
 
-        let visibleHeight = scrollView.bounds.height
+            let targetOffsetX = targetContentOffset.pointee.x + (visibleWidth / 2.0)
 
-        let targetOffsetY = targetContentOffset.pointee.y + (visibleHeight / 2.0)
+            guard let closestView = frames.min(by: { abs($0.midX - targetOffsetX) < abs($1.midX - targetOffsetX) }) else {
+                return
+            }
 
-        guard let closestView = frames.min(by: { abs($0.midY - targetOffsetY) < abs($1.midY - targetOffsetY) }) else {
-            return
+            let newTargetOffsetX = closestView.midX - (visibleWidth / 2.0)
+
+            guard targetContentOffset.pointee.x + visibleWidth < scrollView.contentSize.width else {
+                return
+            }
+
+            targetContentOffset.pointee.x = newTargetOffsetX
         }
-
-        let newTargetOffsetY = closestView.midY - (visibleHeight / 2.0)
-
-        guard targetContentOffset.pointee.y + visibleHeight < scrollView.contentSize.height else {
-            return
-        }
-
-        targetContentOffset.pointee.y = newTargetOffsetY
     }
 }
