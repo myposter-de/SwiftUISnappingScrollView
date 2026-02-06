@@ -34,7 +34,7 @@ where Content : View
             .transformPreference(AnchorsKey.self) { $0 = AnchorsKey.defaultValue }
 //            .background(UIScrollViewBridge(decelerationRate: decelerationRate.rate, delegate: delegate))
         }
-        .introspect(.scrollView, on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18)) { scrollView in
+        .introspect(.scrollView, on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18, .v26)) { scrollView in
             scrollView.decelerationRate = decelerationRate.rate
             scrollView.delegate = delegate
             
